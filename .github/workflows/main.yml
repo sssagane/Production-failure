@@ -1,0 +1,38 @@
+name: Deploy HTML to nginx
+
+on:
+  push:
+    branches: 
+      - main 
+    paths: 
+      - '**.html' 
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy HTML file to NGINX server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.HOSTNAME }}
+          username: ${{ vars.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "rolledback.html"
+          target: /var/www/html
+          debug: true  # Enable debug output for scp
+
+      - name: Reload NGINX
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ vars.HOSTNAME }}
+          username: ${{ vars.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          debug: true  # Enable debug output for ssh
+          script: |
+            set -x  # Enable shell command tracing
+            sudo nginx -t
+            sudo systemctl reload nginx
